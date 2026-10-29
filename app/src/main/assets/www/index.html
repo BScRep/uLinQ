@@ -1,0 +1,662 @@
+<!doctype html>
+<!-- taaLinQ, Android-versie. Dezelfde pagina (zonder deze kop) staat in web/taalinq.html en draait ook online.
+     Pas je iets aan, doe het dan hier en kopieer de wijziging naar web/taalinq.html als je beide gelijk wilt houden. -->
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>taaLinQ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: één smalle kolom, kop met Reportable-streep, drie tabbladen; het woord dat gevraagd wordt is het grootste op het scherm */
+:root{
+  --bg:#F4F4FA; --surface:#FFFFFF; --ink:#112B00; --muted:#5B6355; --line:#DADAE6;
+  --accent:#3B3BB0; --accent-soft:#E6E6F7; --tab:#AA0000;
+  --good:#1F7A3A; --good-soft:#E3F2E7; --warn:#9A6400; --warn-soft:#FBF0DC; --bad:#B42318; --bad-soft:#FBE7E5;
+  --s1:#9696FF; --s2:#CCCCCC; --s3:#C65555;
+  --f-word:"Literata",Georgia,"Times New Roman",serif;
+  --f-ui:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12130F; --surface:#1B1D18; --ink:#E9EEE4; --muted:#A3AA9C; --line:#33362E;
+  --accent:#9696FF; --accent-soft:#25264A; --tab:#E06A6A;
+  --good:#6FCF8A; --good-soft:#18301F; --warn:#E3B45C; --warn-soft:#33280F; --bad:#F08A80; --bad-soft:#3A1A17;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12130F; --surface:#1B1D18; --ink:#E9EEE4; --muted:#A3AA9C; --line:#33362E;
+  --accent:#9696FF; --accent-soft:#25264A; --tab:#E06A6A;
+  --good:#6FCF8A; --good-soft:#18301F; --warn:#E3B45C; --warn-soft:#33280F; --bad:#F08A80; --bad-soft:#3A1A17;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.5}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+header{display:flex;align-items:center;gap:10px;padding-block:18px 10px}
+header svg{flex:none}
+.brand{font-family:var(--f-word);font-weight:700;font-size:22px;letter-spacing:-.01em}
+.brand b{color:var(--accent)}
+.sub{color:var(--muted);font-size:13px;margin-left:auto;text-align:right}
+.stripe{display:grid;grid-template-columns:1fr 1fr 1fr;height:4px;border-radius:2px;overflow:hidden}
+.stripe i:nth-child(1){background:var(--s1)}.stripe i:nth-child(2){background:var(--s2)}.stripe i:nth-child(3){background:var(--s3)}
+nav{display:flex;gap:4px;margin-block:10px 18px;border-bottom:1px solid var(--line)}
+nav button{all:unset;cursor:pointer;padding:10px 12px;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+nav button[aria-selected="true"]{color:var(--ink);border-color:var(--tab)}
+nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h2{font-family:var(--f-word);font-size:19px;margin:0 0 4px;text-wrap:balance}
+.lede{color:var(--muted);margin:0 0 16px;max-width:60ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.row>*{flex:1 1 140px;min-width:0}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%;text-transform:none;letter-spacing:0}
+textarea{font-family:ui-monospace,Menlo,monospace;font-size:12px;min-height:160px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.btn{font:inherit;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:var(--surface);border-radius:8px;padding:10px 16px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.btn:disabled{opacity:.45;cursor:default}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg)}
+.seg button{all:unset;flex:1;text-align:center;padding:8px 6px;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.field-title{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+/* overhoring */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 18px;display:flex;flex-direction:column;gap:14px}
+.meta{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.lang{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:4px;background:var(--accent-soft);color:var(--accent)}
+.prompt{font-family:var(--f-word);font-size:clamp(30px,8vw,42px);font-weight:700;line-height:1.1;word-break:break-word}
+.answer-row{display:flex;gap:8px}
+.answer-row input{flex:1;min-width:0;font-family:var(--f-word);font-size:20px}
+.msg{border-radius:8px;padding:10px 12px;font-weight:500}
+.msg.good{background:var(--good-soft);color:var(--good)}
+.msg.warn{background:var(--warn-soft);color:var(--warn)}
+.msg.bad{background:var(--bad-soft);color:var(--bad)}
+.trans{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.trans li{display:flex;align-items:baseline;gap:8px;font-family:var(--f-word);font-size:18px}
+.trans li .mk{font-family:var(--f-ui);font-size:13px;width:18px;flex:none;text-align:center;font-weight:700}
+.trans li.hit .mk{color:var(--good)} .trans li.miss .mk{color:var(--muted)}
+.trans li small{font-family:var(--f-ui);color:var(--muted);font-size:13px}
+.score{display:flex;gap:18px;font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted)}
+.score b{color:var(--ink);font-size:17px;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:4px 11px;cursor:pointer;font-variant-numeric:tabular-nums}
+.chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+/* lijst */
+.les{margin-top:18px}
+.les-h{display:flex;align-items:baseline;gap:8px;font-family:var(--f-word);font-weight:700;font-size:17px;padding-bottom:6px;border-bottom:2px solid var(--ink)}
+.les-h span{font-family:var(--f-ui);font-weight:500;font-size:13px;color:var(--muted)}
+.entry{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.entry .w{font-family:var(--f-word);font-size:16px;min-width:0;overflow-wrap:anywhere}
+.entry .w small{display:block;font-family:var(--f-ui);font-size:12px;color:var(--muted)}
+.entry .pg{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.x{all:unset;cursor:pointer;color:var(--muted);padding:0 4px;font-size:16px}
+.x:hover,.x:focus-visible{color:var(--bad)}
+.note{font-size:13px;color:var(--muted)}
+.example{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-soft);padding:2px 7px;border-radius:4px}
+.confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 12px}
+.addbox{border-top:1px solid var(--line);padding-top:14px}
+.addq{font-weight:600}
+.addq b{font-family:var(--f-word);font-size:18px}
+.echo{font-size:13px;color:var(--muted)}
+.echo b{font-family:var(--f-word);font-size:20px;color:var(--ink);font-weight:500;margin-left:4px}
+.promptrow{display:flex;align-items:center;gap:12px}
+.promptrow .prompt{min-width:0}
+.sp{flex:none;display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--accent);cursor:pointer;padding:0;vertical-align:middle}
+.sp{text-decoration:none}
+.sp.s{width:28px;height:28px}
+.sp:hover{border-color:var(--accent)}
+.sp:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sp.aan{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+textarea.plain{font-family:var(--f-word);font-size:18px;min-height:76px}
+.sptoast{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:640px;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--ink);color:var(--bg);font-weight:500;z-index:20}
+.toast{min-height:20px;font-size:13px;color:var(--good);font-weight:600}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .2s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+      <circle cx="15" cy="15" r="13" fill="#0000FF" fill-opacity=".41" stroke="#0000F6"/>
+      <path d="M21 11H10m0 0 3-3m-3 3 3 3M21 19H10m0 0 3-3m-3 3 3 3" stroke="#112B00" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="brand">taa<b>LinQ</b></div>
+    <div class="sub" id="methodeKop"></div>
+  </header>
+  <div class="stripe" aria-hidden="true"><i></i><i></i><i></i></div>
+  <nav role="tablist">
+    <button role="tab" id="tab-quiz" aria-selected="true">Overhoren</button>
+    <button role="tab" id="tab-lijst" aria-selected="false">Woordenlijst</button>
+    <button role="tab" id="tab-delen" aria-selected="false">Delen</button>
+  </nav>
+
+  <!-- OVERHOREN -->
+  <section id="v-quiz">
+    <div id="quizSetup" class="stack">
+      <div>
+        <h2>Overhoring kiezen</h2>
+        <p class="lede">Elke vertaling die je tot en met de gekozen les hebt gehad telt als goed. Je hoeft dus nooit te raden welke het boek bedoelt.</p>
+      </div>
+      <div class="panel stack">
+        <div>
+          <div class="field-title">Richting</div>
+          <div class="seg" id="segRichting">
+            <button data-v="nl-es">NL → ES</button><button data-v="es-nl">ES → NL</button><button data-v="mix">Gemengd</button>
+          </div>
+        </div>
+        <div>
+          <div class="field-title">Lessen</div>
+          <div class="chips" id="lesChips"></div>
+        </div>
+        <div>
+          <div class="field-title">Meer vertalingen</div>
+          <div class="seg" id="segModus">
+            <button data-v="bonus">Doorvragen, bonuspunt</button><button data-v="toon">Meteen tonen</button>
+          </div>
+        </div>
+        <div class="row">
+          <label>Lidwoord<select id="selLidwoord"><option value="negeer">Mag weg</option><option value="verplicht">Verplicht</option></select></label>
+          <label>Accent vergeten<select id="selAccent"><option value="fout">Fout</option><option value="half">Half punt</option><option value="goed">Goed, met melding</option></select></label>
+        </div>
+        <div class="row" id="spRow">
+          <label>Uitspreken<select id="selSpraak"><option value="knop">Met de knop</option><option value="auto">Automatisch</option><option value="uit">Uit</option></select></label>
+          <label>Taal<select id="selSpreekTaal"><option value="es">Spaans</option><option value="nl">Nederlands</option></select></label>
+          <label>Tempo<select id="selTempo"><option value="1">Normaal</option><option value="0.8">Langzaam</option><option value="0.6">Heel langzaam</option></select></label>
+          <label style="flex-basis:100%">Stem<select id="selStem"></select></label>
+        </div>
+        <div class="note" id="spInfo"></div>
+        <button class="btn" id="btnStart">Start overhoring</button>
+        <div class="note" id="poolInfo"></div>
+      </div>
+    </div>
+
+    <div id="quizRun" class="stack" hidden>
+      <div class="card" id="card">
+        <div class="meta"><span id="qPos"></span><span id="qBlz"></span></div>
+        <div><span class="lang" id="qLang"></span></div>
+        <div class="promptrow"><div class="prompt" id="qWord"></div><span id="qSpk"></span></div>
+        <form class="answer-row" id="ansForm" autocomplete="off">
+          <input id="ansInput" autocapitalize="off" spellcheck="false" aria-label="Jouw vertaling">
+          <button class="btn" id="ansBtn">Controleer</button>
+        </form>
+        <div id="qFeedback" class="stack"></div>
+        <div class="row" id="qActions"></div>
+      </div>
+      <div class="score">
+        <div><b id="scPunten">0</b>punten</div>
+        <div><b id="scBonus">0</b>bonus</div>
+        <div><b id="scGoed">0/0</b>goed</div>
+        <button class="btn ghost small" id="btnStop" style="margin-left:auto;align-self:center">Stoppen</button>
+      </div>
+    </div>
+
+    <div id="quizEnd" class="stack" hidden>
+      <div class="card">
+        <h2>Overhoring klaar</h2>
+        <div class="score" id="endScore"></div>
+        <div id="endFout"></div>
+        <div class="row"><button class="btn" id="btnAgain">Nieuwe overhoring</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WOORDENLIJST -->
+  <section id="v-lijst" hidden>
+    <h2>Woordenlijst</h2>
+    <p class="lede">Zet meerdere vertalingen achter elkaar met een komma. Elke combinatie wordt een koppeling, en die werkt vanzelf in beide richtingen.</p>
+    <form class="panel stack" id="addForm" autocomplete="off">
+      <div class="row">
+        <label>Nederlands<input id="inNl" placeholder="nemen, pakken"></label>
+        <label>Spaans<input id="inEs" placeholder="tomar, coger" autocapitalize="off"></label>
+      </div>
+      <div class="row">
+        <label>Les<input id="inLes" type="number" min="1" inputmode="numeric"></label>
+        <label>Blz<input id="inBlz" type="number" min="1" inputmode="numeric"></label>
+        <label style="flex-basis:180px">Betekenis (optioneel)<input id="inHint" placeholder="meubel"></label>
+      </div>
+      <div class="row" style="align-items:center"><button class="btn" style="flex:0 0 auto">Toevoegen</button><span class="toast" id="addToast"></span></div>
+    </form>
+    <form class="panel stack" id="zegForm" style="margin-top:14px" autocomplete="off">
+      <label id="zegLabel">Woord of zin laten uitspreken<textarea id="zegTxt" class="plain" lang="es" placeholder="¿Dónde está la estación?"></textarea></label>
+      <div class="row" style="align-items:center"><button class="btn" id="zegBtn" style="flex:0 0 auto">Uitspreken</button><a class="btn" id="zegGt" target="_blank" rel="noopener" style="flex:0 0 auto;text-decoration:none" hidden>Openen in Google Translate</a></div>
+    </form>
+    <div class="row" style="margin-top:16px"><label>Zoeken<input id="zoek" placeholder="woord in een van beide talen"></label></div>
+    <div id="lijst"></div>
+  </section>
+
+  <!-- DELEN -->
+  <section id="v-delen" hidden>
+    <h2>Delen en bewaren</h2>
+    <p class="lede">De lijst staat in deze browser. Kopieer de JSON om hem te bewaren of door te sturen, en plak een lijst van een ander hieronder om hem in te lezen.</p>
+    <div class="panel stack">
+      <label>Naam van de methode<input id="inMethode"></label>
+      <label>Deze lijst als JSON<textarea id="exportTxt" readonly></textarea></label>
+      <div class="row" style="align-items:center"><button class="btn" id="btnCopy" style="flex:0 0 auto">Kopiëren</button><button class="btn ghost" id="btnDeel" style="flex:0 0 auto" hidden>Delen…</button><span class="toast" id="copyToast"></span></div>
+    </div>
+    <div class="panel stack" style="margin-top:14px">
+      <label>Lijst inlezen (plakken of bestand kiezen)<textarea id="importTxt" placeholder='{"methode": "Camino", "woorden": [...], "koppelingen": [...]}'></textarea></label>
+      <input type="file" id="importFile" accept=".json,application/json" aria-label="JSON-bestand kiezen">
+      <div class="row">
+        <button class="btn" id="btnMerge">Samenvoegen</button>
+        <button class="btn ghost" id="btnReplace">Vervangen</button>
+      </div>
+      <div id="importMsg"></div>
+    </div>
+  </section>
+</div>
+
+<div id="spToast" class="sptoast" role="status" hidden></div>
+<script>
+const KEY='taalinq-v1';
+const LANG={nl:'NL',es:'ES'};
+const ART={nl:['de','het','een'],es:['el','la','los','las','un','una','unos','unas']};
+
+function voorbeeld(){
+  const d={methode:'Camino',voorbeeld:true,talen:['nl','es'],woorden:[],koppelingen:[]};
+  const rijen=[
+    [1,8,'hallo','hola'],[1,8,'dag','hola'],[1,8,'dag','adiós'],[1,8,'tot ziens','adiós'],
+    [1,8,'ja','sí'],[1,8,'nee','no'],[1,8,'niet','no'],[1,9,'de meneer','el señor'],[1,9,'de heer','el señor'],[1,9,'mevrouw','la señora'],
+    [2,15,'nemen','tomar'],[2,15,'drinken','tomar'],[2,15,'nemen','coger','vooral Spanje'],[2,15,'pakken','coger'],
+    [2,16,'de bank','el banco','geld'],[2,16,'het bankje','el banco','zitten'],[2,16,'de bank','el sofá','meubel'],
+    [2,16,'het huis','la casa'],[2,17,'wonen','vivir'],[2,17,'leven','vivir'],
+    [3,22,'de straat','la calle'],[3,22,'groot','grande'],[3,22,'klein','pequeño'],
+    [3,23,'spreken','hablar'],[3,23,'praten','hablar'],[3,23,'werken','trabajar'],[3,23,'het werk','el trabajo'],[3,23,'de baan','el trabajo']
+  ];
+  rijen.forEach(([les,blz,nl,es,hint])=>koppel(d,nl,es,les,blz,hint||''));
+  return d;
+}
+
+let data, set;
+function laad(){
+  try{const r=JSON.parse(localStorage.getItem(KEY)||'null'); if(r&&r.data){data=r.data;set=r.set;}}catch(e){}
+  if(!data) data=voorbeeld();
+  set=Object.assign({richting:'nl-es',lessen:null,modus:'bonus',lidwoord:'negeer',accent:'fout',spraak:'knop',spreekTaal:'es',tempo:'1',stem:''},set||{});
+}
+function bewaar(){try{localStorage.setItem(KEY,JSON.stringify({data,set}))}catch(e){}}
+
+/* ---------- datamodel ---------- */
+function nieuwId(d,taal){let n=1;const ids=new Set(d.woorden.map(w=>w.id));while(ids.has(taal+n))n++;return taal+n}
+const nfc=s=>s.normalize('NFC');
+function vindWoord(d,taal,tekst){tekst=nfc(tekst).toLowerCase();return d.woorden.find(w=>w.taal===taal&&nfc(w.tekst).toLowerCase()===tekst)}
+function woord(d,taal,tekst){let w=vindWoord(d,taal,tekst);if(!w){w={id:nieuwId(d,taal),taal,tekst};d.woorden.push(w)}return w}
+function koppel(d,nl,es,les,blz,hint,nagaan){
+  const a=woord(d,'nl',nfc(nl.trim())),b=woord(d,'es',nfc(es.trim()));
+  const k=d.koppelingen.find(k=>k.van===a.id&&k.naar===b.id);
+  if(k){if(les<k.les){k.les=les;k.blz=blz}if(hint&&!k.hint)k.hint=hint;return false}
+  const n={van:a.id,naar:b.id,les,blz};if(hint)n.hint=hint;if(nagaan)n.nagaan=true;d.koppelingen.push(n);return true;
+}
+function ruimOp(){const ids=new Set();data.koppelingen.forEach(k=>{ids.add(k.van);ids.add(k.naar)});data.woorden=data.woorden.filter(w=>ids.has(w.id))}
+const byId=id=>data.woorden.find(w=>w.id===id);
+function lessen(){return [...new Set(data.koppelingen.map(k=>k.les))].sort((a,b)=>a-b)}
+function vertalingen(id,maxLes){
+  const uit=[];
+  data.koppelingen.forEach(k=>{
+    if(k.les>maxLes)return;
+    const ander=k.van===id?k.naar:k.naar===id?k.van:null;
+    if(ander&&!uit.some(u=>u.id===ander))uit.push({id:ander,tekst:byId(ander).tekst,hint:k.hint||'',les:k.les,blz:k.blz,nagaan:!!k.nagaan});
+  });
+  return uit;
+}
+
+/* ---------- vergelijken ---------- */
+function basis(s,taal){
+  s=s.normalize('NFC').toLowerCase().replace(/[¿¡?!.,;:"]/g,' ').replace(/\s+/g,' ').trim();
+  if(set.lidwoord==='negeer'){const p=s.split(' ');if(p.length>1&&ART[taal].includes(p[0]))s=p.slice(1).join(' ')}
+  return s;
+}
+const zonderAccent=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'');
+function vergelijk(invoer,doel,taal){
+  const a=basis(invoer,taal),b=basis(doel,taal);
+  if(!a)return null;
+  if(a===b)return 'exact';
+  if(zonderAccent(a)===zonderAccent(b))return 'accent';
+  return null;
+}
+function zoekMatch(invoer,opties,taal){
+  let best=null;
+  for(const o of opties){const r=vergelijk(invoer,o.tekst,taal);if(r==='exact')return{o,r};if(r&&!best)best={o,r}}
+  return best;
+}
+
+/* ---------- overhoring ---------- */
+let Q=null;
+function pool(){
+  const gekozen=set.lessen&&set.lessen.length?set.lessen:lessen();
+  const bron=set.richting==='nl-es'?['nl']:set.richting==='es-nl'?['es']:['nl','es'];
+  const ids=new Set();
+  data.koppelingen.forEach(k=>{if(!gekozen.includes(k.les))return;bron.forEach(t=>{const id=t==='nl'?k.van:k.naar;ids.add(id)})});
+  return {ids:[...ids],maxLes:Math.max(...gekozen)};
+}
+function schud(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function start(){
+  const p=pool();if(!p.ids.length)return;
+  Q={rij:schud(p.ids.map(id=>({id,herkans:false}))),i:0,maxLes:p.maxLes,punten:0,bonus:0,goed:0,gevraagd:0,fout:[]};
+  toon('run');vraag();
+}
+function vraag(){
+  const it=Q.rij[Q.i],w=byId(it.id);
+  Q.cur={it,w,opties:vertalingen(it.id,Q.maxLes),geraden:[],fase:'vraag',doelTaal:w.taal==='nl'?'es':'nl'};
+  $('qPos').textContent=`Vraag ${Q.i+1} van ${Q.rij.length}`+(it.herkans?' · herkansing':'');
+  const blz=[...new Set(Q.cur.opties.map(o=>o.blz))].sort((a,b)=>a-b);
+  $('qBlz').textContent='blz '+blz.join(', ');
+  $('qLang').textContent=`${LANG[w.taal]} → ${LANG[Q.cur.doelTaal]}`;
+  $('qWord').textContent=w.tekst;
+  $('qSpk').replaceChildren(spreekKnop(w.tekst,w.taal)||'');
+  if(set.spraak==='auto')spreek(w.tekst,w.taal);
+  $('qFeedback').innerHTML='';$('qActions').innerHTML='';
+  $('ansForm').hidden=false;$('ansInput').value='';$('ansInput').placeholder='Jouw vertaling';$('ansBtn').textContent='Controleer';
+  $('ansInput').lang=Q.cur.doelTaal;
+  setTimeout(()=>$('ansInput').focus(),30);
+  score();
+}
+function antwoord(e){
+  e.preventDefault();
+  const c=Q.cur,v=$('ansInput').value;if(!v.trim())return;
+  const rest=c.opties.filter(o=>!c.geraden.some(g=>g.id===o.id));
+  const m=zoekMatch(v,rest,c.doelTaal);
+  echo(v);
+  if(c.fase==='vraag'){
+    Q.gevraagd++;
+    if(!m){
+      c.nieuw={tekst:v.trim(),fase:'vraag'};
+      melding('bad',`Niet goed. Dit is geen vertaling van ${c.w.tekst} tot en met les ${Q.maxLes}.`);
+      if(!c.it.herkans)Q.rij.push({id:c.it.id,herkans:true});
+      Q.fout.push(c.w.tekst);
+      return klaar();
+    }
+    c.geraden.push(m.o);
+    let pt=1;
+    if(m.r==='accent'){
+      if(set.accent==='fout'){Q.gevraagd;melding('bad',`Bijna. Let je op de accenten? Het is ${m.o.tekst}.`);c.geraden=[];if(!c.it.herkans)Q.rij.push({id:c.it.id,herkans:true});Q.fout.push(c.w.tekst);return klaar()}
+      pt=set.accent==='half'?.5:1;
+      melding('warn',`Goed. Let je op de accenten? Het is ${m.o.tekst}.`+(pt<1?' Half punt.':''));
+    } else melding('good','Goed!');
+    Q.punten+=pt;Q.goed++;
+    const over=c.opties.length-1;
+    if(over>0&&set.modus==='bonus'){
+      c.fase='extra';
+      $('ansInput').value='';$('ansInput').placeholder='Nog een vertaling';$('ansBtn').textContent='Bonus';
+      melding('',`Er ${over===1?'is':'zijn'} nog ${over} andere vertaling${over===1?'':'en'}. Weet je er nog een?`,true);
+      $('qActions').innerHTML='';knop('Ik weet er geen meer',klaar,true);
+      $('ansInput').focus();score();return;
+    }
+    return klaar();
+  }
+  if(c.fase==='extra'){
+    if(m&&!(m.r==='accent'&&set.accent==='fout')){
+      c.geraden.push(m.o);Q.bonus++;
+      melding(m.r==='accent'?'warn':'good',`+1 bonus: ${m.o.tekst}.`+(m.r==='accent'?' Let je op de accenten?':''));
+      const over=c.opties.length-c.geraden.length;
+      if(over>0){$('ansInput').value='';melding('',`Nog ${over}.`,true);score();return}
+      return klaar();
+    }
+    if(!m)c.nieuw={tekst:v.trim(),fase:'extra'};
+    melding('bad',m?`Bijna. Let je op de accenten? Het is ${m.o.tekst}.`:'Deze staat er niet bij.');
+    return klaar();
+  }
+}
+function klaar(){
+  const c=Q.cur;c.fase='uit';$('ansForm').hidden=true;
+  toonVertalingen();
+  if(set.spraak==='auto'&&c.doelTaal===set.spreekTaal)spreek(c.opties.map(o=>o.tekst).join('. '),c.doelTaal);
+  $('qActions').innerHTML='';knop(Q.i+1<Q.rij.length?'Volgende':'Uitslag',volgende);
+  if(c.nieuw)knop('Toevoegen aan lijst?',toevoegVraag,true);
+  setTimeout(()=>$('qActions').querySelector('button').focus(),30);
+  score();
+}
+function toevoegVraag(){
+  const c=Q.cur,n=c.nieuw;$('qActions').innerHTML='';
+  const eerste=[...c.opties].sort((a,b)=>a.les-b.les||a.blz-b.blz)[0]||{les:Q.maxLes,blz:''};
+  const f=document.createElement('form');f.className='addbox stack';f.autocomplete='off';
+  f.innerHTML=`<div class="addq">Toevoegen: <b></b> → </div>
+    <label>${LANG[c.doelTaal]}<input id="nwTekst" autocapitalize="off" spellcheck="false"></label>
+    <div class="addq">Weet je in welke les dit voorkomt?</div>
+    <div class="row"><label>Les<input id="nwLes" type="number" min="1" inputmode="numeric"></label><label>Blz<input id="nwBlz" type="number" min="1" inputmode="numeric"></label></div>
+    <div class="row"><button class="btn">Toevoegen</button><button type="button" class="btn ghost" id="nwOnb">Les onbekend</button><button type="button" class="btn ghost" id="nwAnn">Annuleren</button></div>
+    <div class="note">Bij „Les onbekend” komt het bij les ${eerste.les}, gemarkeerd om na te gaan.</div>`;
+  f.querySelector('b').textContent=c.w.tekst;
+  $('qFeedback').append(f);
+  $('nwTekst').value=n.tekst;$('nwLes').value=eerste.les;$('nwBlz').value=eerste.blz;
+  const opslaan=onbekend=>{
+    const t=$('nwTekst').value.trim();if(!t)return;
+    const les=onbekend?eerste.les:(parseInt($('nwLes').value)||eerste.les),blz=onbekend?eerste.blz:(parseInt($('nwBlz').value)||eerste.blz);
+    const nl=c.w.taal==='nl'?c.w.tekst:t,es=c.w.taal==='es'?c.w.tekst:t;
+    koppel(data,nl,es,les,blz,'',onbekend);delete data.voorbeeld;
+    if(n.fase==='vraag'){
+      Q.punten+=1;Q.goed++;
+      const j=Q.rij.findIndex((r,k)=>k>Q.i&&r.id===c.it.id&&r.herkans);if(j>-1)Q.rij.splice(j,1);
+      const k=Q.fout.lastIndexOf(c.w.tekst);if(k>-1)Q.fout.splice(k,1);
+    } else Q.bonus++;
+    c.opties=vertalingen(c.it.id,Math.max(Q.maxLes,les));
+    const nw=c.opties.find(o=>o.tekst===vindWoord(data,c.doelTaal,t).tekst);if(nw)c.geraden.push(nw);
+    c.nieuw=null;f.remove();
+    $('qFeedback').querySelector('.trans').remove();
+    melding('good',`${t} toegevoegd aan les ${les}${blz?', blz '+blz:''}${onbekend?' (na te gaan)':''}. Telt als ${n.fase==='vraag'?'goed':'bonus'}.`);
+    toonVertalingen();
+    $('qActions').innerHTML='';knop(Q.i+1<Q.rij.length?'Volgende':'Uitslag',volgende);
+    bewaar();chips();lijst();exporteer();score();
+  };
+  f.onsubmit=e=>{e.preventDefault();opslaan(false)};
+  $('nwOnb').onclick=()=>opslaan(true);
+  $('nwAnn').onclick=()=>{f.remove();klaar2()};
+  setTimeout(()=>$('nwTekst').focus(),30);
+}
+function klaar2(){const c=Q.cur;$('qActions').innerHTML='';knop(Q.i+1<Q.rij.length?'Volgende':'Uitslag',volgende);if(c.nieuw)knop('Toevoegen aan lijst?',toevoegVraag,true)}
+function toonVertalingen(){
+  const c=Q.cur;
+  const ul=document.createElement('ul');ul.className='trans';
+  c.opties.forEach(o=>{const hit=c.geraden.some(g=>g.id===o.id);const li=document.createElement('li');li.className=hit?'hit':'miss';
+    li.innerHTML=`<span class="mk">${hit?'✓':'·'}</span><span></span>`;li.children[1].textContent=o.tekst;{const b=spreekKnop(o.tekst,c.doelTaal,true);if(b)li.append(b)}
+    const s=document.createElement('small');s.textContent=[o.hint,`les ${o.les}, blz ${o.blz}`,o.nagaan?'na te gaan':''].filter(Boolean).join(' · ');li.append(s);ul.append(li)});
+  $('qFeedback').append(ul);
+}
+function volgende(){Q.i++;if(Q.i<Q.rij.length)vraag();else einde()}
+function einde(){
+  toon('end');
+  $('endScore').innerHTML=`<div><b>${fmt(Q.punten)}</b>punten</div><div><b>${Q.bonus}</b>bonus</div><div><b>${Q.goed}/${Q.gevraagd}</b>goed</div>`;
+  const f=[...new Set(Q.fout)];
+  $('endFout').innerHTML=f.length?'<div class="field-title">Nog eens oefenen</div>':'<div class="msg good">Alles in één keer goed.</div>';
+  if(f.length){const p=document.createElement('p');p.style.cssText='font-family:var(--f-word);font-size:17px;margin:0';p.textContent=f.join(', ');$('endFout').append(p)}
+  Q=null;
+}
+function echo(v){const d=document.createElement('div');d.className='echo';d.textContent='Jouw antwoord: ';const b=document.createElement('b');b.textContent=v.trim();d.append(b);const k=spreekKnop(v.trim(),Q.cur.doelTaal,true);if(k){k.style.marginLeft='8px';d.append(k)}$('qFeedback').append(d)}
+function melding(soort,tekst,neutraal){const d=document.createElement('div');d.className=neutraal?'note':'msg '+soort;d.textContent=tekst;$('qFeedback').append(d)}
+function knop(t,fn,ghost){const b=document.createElement('button');b.className='btn'+(ghost?' ghost':'');b.textContent=t;b.onclick=fn;$('qActions').append(b)}
+const fmt=n=>String(n).replace('.',',');
+function score(){if(!Q)return;$('scPunten').textContent=fmt(Q.punten);$('scBonus').textContent=Q.bonus;$('scGoed').textContent=`${Q.goed}/${Q.gevraagd}`}
+function toon(s){$('quizSetup').hidden=s!=='setup';$('quizRun').hidden=s!=='run';$('quizEnd').hidden=s!=='end'}
+
+/* ---------- uitspreken ---------- */
+const APP=window.TaalApp||null; /* aanwezig in de Android-app: brug naar de voorleesstem van Android */
+const SP={native:!!APP,ok:!!APP||!!(window.speechSynthesis&&window.SpeechSynthesisUtterance),stemmen:[],poging:0,werkt:false};
+window.taalinqTts=s=>{if(s==='gereed')laadStemmen();if(s==='start')SP.werkt=true;if(s==='fout')toast('Voorlezen lukte niet. Kies bij de instellingen een andere stem, of installeer er een.',true)};
+const LOCALE={es:'es-ES',nl:'nl-NL'};
+const ICON='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+function laadStemmen(){
+  if(!SP.ok)return;
+  const t=set.spreekTaal;
+  if(SP.native){
+    try{SP.stemmen=JSON.parse(APP.stemmen(t)).map(v=>({voiceURI:v.id,name:(v.offline?'':'online · ')+v.id,lang:v.lang}))}catch(e){SP.stemmen=[]}
+  } else SP.stemmen=speechSynthesis.getVoices().filter(v=>v.lang.replace('_','-').toLowerCase().startsWith(t));
+  SP.stemmen.sort((a,b)=>(b.lang.replace('_','-')===LOCALE[t])-(a.lang.replace('_','-')===LOCALE[t])||a.name.localeCompare(b.name));
+  const sel=$('selStem');sel.replaceChildren();
+  const o0=document.createElement('option');o0.value='';o0.textContent='Standaard van dit apparaat';sel.append(o0);
+  SP.stemmen.forEach(v=>{const o=document.createElement('option');o.value=v.voiceURI;o.textContent=`${v.name} (${v.lang})`;sel.append(o)});
+  sel.value=SP.stemmen.some(v=>v.voiceURI===set.stem)?set.stem:'';
+  $('zegTxt').lang=t;$('zegLabel').firstChild.textContent=(t==='es'?'Spaans':'Nederlands')+' woord of zin laten uitspreken';
+  spInfo();
+}
+function spInfo(){
+  const el=$('spInfo');
+  if(!SP.ok){
+    el.textContent='Deze app kan zelf niet voorlezen. De luidspreker opent het woord in Google Translate, waar je op het luidsprekertje tikt. Open taaLinQ in Chrome om het hier direct te horen.';
+    ['selTempo','selStem'].forEach(id=>$(id).closest('label').hidden=true);
+    $('selSpraak').querySelector('[value="auto"]').hidden=true;if(set.spraak==='auto')set.spraak='knop',$('selSpraak').value='knop';
+    $('zegTxt').lang=set.spreekTaal;$('zegLabel').firstChild.textContent=(set.spreekTaal==='es'?'Spaans':'Nederlands')+' woord of zin laten uitspreken';
+    zegLink();return}
+  if(set.spraak==='uit'){el.textContent='';return}
+  el.textContent=SP.stemmen.length?(set.spraak==='auto'?'Het gevraagde woord wordt voorgelezen, en na je antwoord de goede vertaling.':''):
+    `Geen ${set.spreekTaal==='es'?'Spaanse':'Nederlandse'} stem gevonden. Probeer de knop toch; lukt het niet, installeer dan een stem in de spraakinstellingen van je telefoon.`;
+  if(SP.native&&!SP.stemmen.length&&APP.gereed()){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.style.marginLeft='8px';b.textContent='Stem installeren';b.onclick=()=>APP.installeerStem();el.append(b)}
+}
+function spreek(tekst,taal,altijd){
+  if(!SP.ok||taal!==set.spreekTaal||(!altijd&&set.spraak==='uit'))return;
+  if(SP.native){
+    const r=APP.spreek(tekst,taal,parseFloat(set.tempo)||1,set.stem||'');
+    if(r==='taal')toast(`Er is geen ${taal==='es'?'Spaanse':'Nederlandse'} stem op deze telefoon.`,true);
+    else if(r==='geen')toast('De voorleesstem start nog. Probeer het zo nog eens.');
+    return;
+  }
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(tekst);
+  u.lang=LOCALE[taal];u.rate=parseFloat(set.tempo)||1;
+  const v=SP.stemmen.find(v=>v.voiceURI===set.stem)||SP.stemmen[0];if(v)u.voice=v;
+  let gestart=false;const mijn=++SP.poging;
+  u.onstart=()=>{gestart=true;SP.werkt=true};
+  u.onerror=e=>{if(mijn===SP.poging&&!['interrupted','canceled'].includes(e.error)&&!SP.werkt)geenSpraak()};
+  speechSynthesis.speak(u);
+  setTimeout(()=>{if(mijn===SP.poging&&!gestart&&!SP.werkt&&!speechSynthesis.speaking)geenSpraak()},2500);
+}
+function geenSpraak(){
+  if(!SP.ok)return;
+  SP.ok=false;try{speechSynthesis.cancel()}catch(e){}
+  document.querySelectorAll('button.sp').forEach(b=>{const n=spreekKnop(b.dataset.t,b.dataset.l,b.classList.contains('s'));if(n){n.style.cssText=b.style.cssText;b.replaceWith(n)}});
+  spInfo();
+  toast('Deze app speelt geen spraak af. Tik nog eens op de luidspreker om het woord in Google Translate te openen.');
+}
+function toast(tekst,installeer){
+  const t=$('spToast');t.textContent=tekst;
+  if(installeer&&SP.native){const b=document.createElement('button');b.type='button';b.className='btn small';b.style.marginLeft='10px';b.textContent='Stem installeren';b.onclick=()=>APP.installeerStem();t.append(b)}
+  t.hidden=false;clearTimeout(SP.tt);SP.tt=setTimeout(()=>t.hidden=true,installeer?10000:7000);
+}
+function gtUrl(tekst,taal){return `https://translate.google.com/?sl=${taal}&tl=${taal==='es'?'nl':'es'}&text=${encodeURIComponent(tekst)}&op=translate`}
+function spreekKnop(tekst,taal,klein){
+  if(taal!==set.spreekTaal||set.spraak==='uit'||!tekst)return null;
+  if(!SP.ok){const a=document.createElement('a');a.className='sp'+(klein?' s':'');a.innerHTML=ICON;a.href=gtUrl(tekst,taal);a.target='_blank';a.rel='noopener';
+    a.setAttribute('aria-label','Uitspraak van '+tekst+' openen in Google Translate');return a}
+  const b=document.createElement('button');b.type='button';b.className='sp'+(klein?' s':'');b.innerHTML=ICON;
+  b.setAttribute('aria-label','Uitspreken: '+tekst);b.dataset.t=tekst;b.dataset.l=taal;
+  b.onclick=()=>{spreek(tekst,taal);b.classList.add('aan');setTimeout(()=>b.classList.remove('aan'),600)};
+  return b;
+}
+
+/* ---------- instellingen-UI ---------- */
+function seg(id,key){
+  const el=$(id);
+  const upd=()=>el.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===set[key]));
+  el.onclick=e=>{const b=e.target.closest('button');if(!b)return;set[key]=b.dataset.v;upd();bewaar();poolInfo()};upd();
+}
+function chips(){
+  const L=lessen();if(set.lessen)set.lessen=set.lessen.filter(l=>L.includes(l));
+  const el=$('lesChips');el.innerHTML='';
+  const alle=!set.lessen||!set.lessen.length;
+  const a=document.createElement('button');a.textContent='Alle';a.setAttribute('aria-pressed',alle);a.onclick=()=>{set.lessen=null;chips();bewaar()};el.append(a);
+  L.forEach(l=>{const b=document.createElement('button');b.textContent='Les '+l;b.setAttribute('aria-pressed',!alle&&set.lessen.includes(l));
+    b.onclick=()=>{let s=alle?[]:[...set.lessen];s=s.includes(l)?s.filter(x=>x!==l):[...s,l].sort((a,b)=>a-b);set.lessen=s;chips();bewaar()};el.append(b)});
+  poolInfo();
+}
+function poolInfo(){
+  const p=pool();
+  $('poolInfo').textContent=p.ids.length?`${p.ids.length} woorden. Goed gerekend worden alle vertalingen tot en met les ${p.maxLes}.`:'Geen woorden in deze selectie.';
+  $('btnStart').disabled=!p.ids.length;
+}
+
+/* ---------- woordenlijst ---------- */
+function lijst(){
+  const z=$('zoek').value.trim().toLowerCase();
+  const el=$('lijst');el.innerHTML='';
+  if(data.voorbeeld){const n=document.createElement('p');n.className='note';n.style.marginTop='14px';n.innerHTML='<span class="example">Voorbeeld</span> Deze woorden en bladzijden zijn verzonnen om de app te tonen. Vervang ze door de woorden uit je Camino-boek.';
+    const b=document.createElement('button');b.className='btn ghost small';b.style.marginLeft='8px';b.textContent='Voorbeeld wissen';
+    b.onclick=()=>{if(b.dataset.zeker){data={methode:'Camino',talen:['nl','es'],woorden:[],koppelingen:[]};set.lessen=null;na()}else{b.dataset.zeker=1;b.textContent='Zeker? Tik nogmaals'}};n.append(b);el.append(n)}
+  lessen().forEach(les=>{
+    const ks=data.koppelingen.filter(k=>k.les===les);
+    const groep=new Map();
+    ks.forEach(k=>{const nl=byId(k.van),es=byId(k.naar);
+      if(z&&!nl.tekst.toLowerCase().includes(z)&&!es.tekst.toLowerCase().includes(z))return;
+      if(!groep.has(k.van))groep.set(k.van,[]);groep.get(k.van).push(k)});
+    if(!groep.size)return;
+    const blzs=[...new Set(ks.map(k=>k.blz))].sort((a,b)=>a-b);
+    const sec=document.createElement('div');sec.className='les';
+    sec.innerHTML=`<div class="les-h">Les ${les}<span>blz ${blzs[0]}${blzs.length>1?'–'+blzs[blzs.length-1]:''} · ${ks.length} koppelingen</span></div>`;
+    [...groep.values()].sort((a,b)=>a[0].blz-b[0].blz||byId(a[0].van).tekst.localeCompare(byId(b[0].van).tekst)).forEach(g=>{
+      g.forEach((k,i)=>{
+        const r=document.createElement('div');r.className='entry';
+        const cel=(tekst,taal)=>{const d=document.createElement('div');d.className='w';if(!tekst)return d;const t=document.createElement('span');t.textContent=tekst;d.append(t);const b=spreekKnop(tekst,taal,true);if(b){b.style.marginLeft='6px';d.append(b)}return d};
+        const nl=cel(i===0?byId(k.van).tekst:'','nl');
+        const es=cel(byId(k.naar).tekst,'es');
+        if(k.hint||k.nagaan){const s=document.createElement('small');s.textContent=[k.hint,k.nagaan?'les na te gaan':''].filter(Boolean).join(' · ');if(k.nagaan)s.style.color='var(--warn)';es.append(s)}
+        const rt=document.createElement('div');rt.style.cssText='display:flex;gap:6px;align-items:baseline';
+        rt.innerHTML=`<span class="pg">blz ${k.blz}</span>`;
+        const x=document.createElement('button');x.className='x';x.setAttribute('aria-label',`Koppeling ${byId(k.van).tekst} – ${byId(k.naar).tekst} verwijderen`);x.textContent='×';
+        x.onclick=()=>{data.koppelingen=data.koppelingen.filter(q=>q!==k);ruimOp();na()};rt.append(x);
+        r.append(nl,es,rt);sec.append(r)})});
+    el.append(sec);
+  });
+  if(!data.koppelingen.length)el.innerHTML='<p class="note" style="margin-top:16px">Nog geen woorden. Voeg hierboven de eerste toe, met les en bladzijde uit je boek.</p>';
+}
+function voegToe(e){
+  e.preventDefault();
+  const nl=$('inNl').value.split(',').map(s=>s.trim()).filter(Boolean),es=$('inEs').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const les=parseInt($('inLes').value),blz=parseInt($('inBlz').value);
+  if(!nl.length||!es.length||!les||!blz){$('addToast').style.color='var(--bad)';$('addToast').textContent='Vul beide talen, les en blz in.';return}
+  let n=0;nl.forEach(a=>es.forEach(b=>{if(koppel(data,a,b,les,blz,$('inHint').value.trim()))n++}));
+  $('addToast').style.color='';$('addToast').textContent=n?`${n} koppeling${n>1?'en':''} toegevoegd`:'Stond er al in';
+  $('inNl').value='';$('inEs').value='';$('inHint').value='';$('inNl').focus();na();
+}
+
+/* ---------- delen ---------- */
+function exporteer(){const {voorbeeld,...d}=data;$('exportTxt').value=JSON.stringify(d,null,1)}
+function leesIn(vervang){
+  const m=$('importMsg');let d;
+  try{d=JSON.parse($('importTxt').value)}catch(e){m.innerHTML='<div class="msg bad">Dit is geen geldige JSON. Controleer of je de hele tekst hebt geplakt.</div>';return}
+  if(!d||!Array.isArray(d.woorden)||!Array.isArray(d.koppelingen)){m.innerHTML='<div class="msg bad">Er ontbreken „woorden” of „koppelingen” in deze lijst.</div>';return}
+  const w=new Map(d.woorden.map(x=>[x.id,x]));
+  if(vervang&&!m.dataset.zeker){m.dataset.zeker=1;m.innerHTML='<div class="confirm">Je huidige lijst wordt overschreven. Tik nogmaals op Vervangen.</div>';return}
+  delete m.dataset.zeker;
+  if(vervang)data={methode:d.methode||'Camino',talen:['nl','es'],woorden:[],koppelingen:[]};
+  else delete data.voorbeeld;
+  let n=0;d.koppelingen.forEach(k=>{const a=w.get(k.van),b=w.get(k.naar);if(a&&b&&koppel(data,a.tekst,b.tekst,+k.les||1,+k.blz||0,k.hint||'',k.nagaan))n++});
+  m.innerHTML=`<div class="msg good">${n} nieuwe koppeling${n===1?'':'en'} ingelezen.</div>`;$('importTxt').value='';na();
+}
+
+/* ---------- algemeen ---------- */
+const $=id=>document.getElementById(id);
+function na(){bewaar();chips();lijst();exporteer();$('methodeKop').textContent=data.methode||'';$('inMethode').value=data.methode||''}
+function tab(n){['quiz','lijst','delen'].forEach(t=>{$('v-'+t).hidden=t!==n;$('tab-'+t).setAttribute('aria-selected',t===n)})}
+['quiz','lijst','delen'].forEach(t=>$('tab-'+t).onclick=()=>tab(t));
+
+laad();
+seg('segRichting','richting');seg('segModus','modus');
+$('selLidwoord').value=set.lidwoord;$('selAccent').value=set.accent;
+$('selLidwoord').onchange=e=>{set.lidwoord=e.target.value;bewaar()};
+$('selAccent').onchange=e=>{set.accent=e.target.value;bewaar()};
+$('selSpraak').value=set.spraak;$('selSpreekTaal').value=set.spreekTaal;$('selTempo').value=set.tempo;
+$('selSpraak').onchange=e=>{set.spraak=e.target.value;bewaar();lijst();spInfo()};
+$('selSpreekTaal').onchange=e=>{set.spreekTaal=e.target.value;set.stem='';bewaar();if(SP.ok)laadStemmen();else spInfo();lijst()};
+$('selTempo').onchange=e=>{set.tempo=e.target.value;bewaar();spreek(set.spreekTaal==='es'?'Buenos días':'Goedemorgen',set.spreekTaal)};
+$('selStem').onchange=e=>{set.stem=e.target.value;bewaar();spreek(set.spreekTaal==='es'?'Buenos días':'Goedemorgen',set.spreekTaal)};
+$('zegForm').onsubmit=e=>{e.preventDefault();const t=$('zegTxt').value.trim();if(!t||!SP.ok)return;spreek(t,set.spreekTaal,true)};
+function zegLink(){if(SP.ok)return;const a=$('zegGt');a.hidden=false;$('zegBtn').hidden=true;const t=$('zegTxt').value.trim();a.href=gtUrl(t||' ',set.spreekTaal);a.setAttribute('aria-disabled',!t)}
+$('zegTxt').oninput=zegLink;
+if(SP.native){if(APP.gereed())laadStemmen();else spInfo()}else if(SP.ok){laadStemmen();speechSynthesis.onvoiceschanged=laadStemmen}else spInfo();
+if(SP.native){$('btnDeel').hidden=false}
+window.taalinqTerug=()=>{if($('v-quiz').hidden){tab('quiz');return true}return false};
+$('btnStart').onclick=start;$('ansForm').onsubmit=antwoord;
+$('btnStop').onclick=()=>{if(Q&&Q.gevraagd)einde();else{Q=null;toon('setup')}};
+$('btnAgain').onclick=()=>{toon('setup');poolInfo()};
+$('addForm').onsubmit=voegToe;$('zoek').oninput=lijst;
+$('inMethode').onchange=e=>{data.methode=e.target.value.trim();na()};
+$('btnDeel').onclick=()=>APP.deel($('exportTxt').value,'taaLinQ-lijst '+(data.methode||''));
+$('btnCopy').onclick=()=>{const t=$('exportTxt').value;if(SP.native){APP.kopieer(t);$('copyToast').textContent='Gekopieerd';return}navigator.clipboard.writeText(t).then(()=>$('copyToast').textContent='Gekopieerd',()=>{$('exportTxt').select();$('copyToast').textContent='Geselecteerd, kopieer met de hand'})};
+$('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('importTxt').value=r.result};r.readAsText(f)};
+$('btnMerge').onclick=()=>leesIn(false);$('btnReplace').onclick=()=>leesIn(true);
+na();
+</script>
+
+</body>
+</html>

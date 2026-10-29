@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Voorkant van het app-icoon: twee pijlen heen en terug, NL <-> ES. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="6" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M72,44H36M36,44l10,-10M36,44l10,10" />
+    <path android:strokeColor="#9696FF" android:strokeWidth="6" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M36,66H72M72,66l-10,-10M72,66l-10,10" />
+</vector>

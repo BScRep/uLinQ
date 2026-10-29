@@ -1,0 +1,50 @@
+# Bouwt de APK op de computers van GitHub, bij elke wijziging die je naar GitHub stuurt.
+# Daarna staat hij klaar onder: Releases -> "Laatste build" (direct te downloaden op je telefoon)
+# en onder: Actions -> de laatste run -> Artifacts -> taaLinQ-apk
+name: APK bouwen
+
+on:
+  push:
+  workflow_dispatch:   # knop "Run workflow" om handmatig te bouwen
+
+permissions:
+  contents: write      # nodig om de APK bij Releases te zetten
+
+jobs:
+  bouwen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code ophalen
+        uses: actions/checkout@v4
+
+      - name: Java 17 installeren
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle klaarzetten
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: APK bouwen
+        run: gradle assembleDebug --no-daemon
+
+      - name: APK een duidelijke naam geven
+        run: cp app/build/outputs/apk/debug/app-debug.apk taaLinQ.apk
+
+      - name: APK beschikbaar maken onder Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: taaLinQ-apk
+          path: taaLinQ.apk
+
+      - name: APK bij Releases zetten
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: laatste-build
+          name: Laatste build
+          body: "Automatisch gebouwd. Download taaLinQ.apk op je telefoon en installeer hem over de vorige versie heen."
+          files: taaLinQ.apk
+          make_latest: true
