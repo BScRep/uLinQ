@@ -120,6 +120,11 @@ class MainActivity : ComponentActivity() {
         web.loadUrl("https://$ADRES_HOST/assets/www/index.html")
     }
 
+    override fun onResume() {
+        super.onResume()
+        brug.hervat()   // na het installeren van een stem: stemmenlijst opnieuw ophalen
+    }
+
     override fun onPause() {
         brug.stop()
         super.onPause()

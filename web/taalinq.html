@@ -157,6 +157,7 @@ textarea.plain{font-family:var(--f-word);font-size:18px;min-height:76px}
           <label>Uitspreken<select id="selSpraak"><option value="knop">Met de knop</option><option value="auto">Automatisch</option><option value="uit">Uit</option></select></label>
           <label>Taal<select id="selSpreekTaal"><option value="es">Spaans</option><option value="nl">Nederlands</option></select></label>
           <label>Tempo<select id="selTempo"><option value="1">Normaal</option><option value="0.8">Langzaam</option><option value="0.6">Heel langzaam</option></select></label>
+          <label style="flex-basis:100%" id="progLabel" hidden>Spraakprogramma<select id="selProg"></select></label>
           <label style="flex-basis:100%">Stem<select id="selStem"></select></label>
         </div>
         <div class="note" id="spInfo"></div>
@@ -190,7 +191,7 @@ textarea.plain{font-family:var(--f-word);font-size:18px;min-height:76px}
         <h2>Overhoring klaar</h2>
         <div class="score" id="endScore"></div>
         <div id="endFout"></div>
-        <div class="row"><button class="btn" id="btnAgain">Nieuwe overhoring</button></div>
+        <div class="row"><button class="btn" id="btnAgain">Terug naar start</button></div>
       </div>
     </div>
   </section>
@@ -464,14 +465,28 @@ function toon(s){$('quizSetup').hidden=s!=='setup';$('quizRun').hidden=s!=='run'
 /* ---------- uitspreken ---------- */
 const APP=window.TaalApp||null; /* aanwezig in de Android-app: brug naar de voorleesstem van Android */
 const SP={native:!!APP,ok:!!APP||!!(window.speechSynthesis&&window.SpeechSynthesisUtterance),stemmen:[],poging:0,werkt:false};
-window.taalinqTts=s=>{if(s==='gereed')laadStemmen();if(s==='start')SP.werkt=true;if(s==='fout')toast('Voorlezen lukte niet. Kies bij de instellingen een andere stem, of installeer er een.',true)};
+const TTSFOUT={'-5':'Deze stem is nog niet gedownload. Kies een stem zonder „niet gedownload”, of download hem via Stem installeren.',
+  '-7':'Deze online stem heeft internet nodig. Kies een stem zonder „online”.','-8':'Deze online stem reageert niet. Kies een stem zonder „online”.',
+  '-6':'De telefoon kon het geluid niet afspelen. Staat het mediavolume aan?','-4':'Het spraakprogramma reageert niet. Kies bij de instellingen een ander spraakprogramma.'};
+window.taalinqTts=s=>{
+  if(s==='gereed'){laadStemmen();laadProgrammas()}
+  if(s==='start')SP.werkt=true;
+  if(s.startsWith('fout')){const c=s.split(':')[1]||'';toast((TTSFOUT[c]||'Voorlezen lukte niet. Kies bij de instellingen een andere stem of een ander spraakprogramma.')+(c?` (code ${c})`:''),true)}
+};
+function laadProgrammas(){
+  if(!SP.native||!APP.programmas)return;
+  let lijst=[];try{lijst=JSON.parse(APP.programmas())}catch(e){}
+  const sel=$('selProg');sel.replaceChildren();
+  lijst.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.naam+(p.standaard?' (standaard)':'');sel.append(o)});
+  sel.value=APP.programma();$('progLabel').hidden=lijst.length<2;
+}
 const LOCALE={es:'es-ES',nl:'nl-NL'};
 const ICON='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
 function laadStemmen(){
   if(!SP.ok)return;
   const t=set.spreekTaal;
   if(SP.native){
-    try{SP.stemmen=JSON.parse(APP.stemmen(t)).map(v=>({voiceURI:v.id,name:(v.offline?'':'online · ')+v.id,lang:v.lang}))}catch(e){SP.stemmen=[]}
+    try{SP.stemmen=JSON.parse(APP.stemmen(t)).map(v=>({voiceURI:v.id,name:v.id+(v.offline?'':' · online')+(v.geinstalleerd===false?' · niet gedownload':''),lang:v.lang}))}catch(e){SP.stemmen=[]}
   } else SP.stemmen=speechSynthesis.getVoices().filter(v=>v.lang.replace('_','-').toLowerCase().startsWith(t));
   SP.stemmen.sort((a,b)=>(b.lang.replace('_','-')===LOCALE[t])-(a.lang.replace('_','-')===LOCALE[t])||a.name.localeCompare(b.name));
   const sel=$('selStem');sel.replaceChildren();
@@ -635,7 +650,12 @@ function zegLink(){if(SP.ok)return;const a=$('zegGt');a.hidden=false;$('zegBtn')
 $('zegTxt').oninput=zegLink;
 if(SP.native){if(APP.gereed())laadStemmen();else spInfo()}else if(SP.ok){laadStemmen();speechSynthesis.onvoiceschanged=laadStemmen}else spInfo();
 if(SP.native){$('btnDeel').hidden=false}
-window.taalinqTerug=()=>{if($('v-quiz').hidden){tab('quiz');return true}return false};
+window.taalinqTerug=()=>{
+  if($('v-quiz').hidden){tab('quiz');return true}
+  if(!$('quizRun').hidden||!$('quizEnd').hidden){Q=null;toon('setup');poolInfo();return true}
+  return false};
+$('selProg').onchange=e=>{set.engine=e.target.value;set.stem='';bewaar();SP.stemmen=[];$('selStem').replaceChildren();APP.kiesProgramma(set.engine)};
+if(SP.native&&APP.programma&&set.engine&&APP.programma()!==set.engine)APP.kiesProgramma(set.engine);else if(SP.native&&APP.gereed())laadProgrammas();
 $('btnStart').onclick=start;$('ansForm').onsubmit=antwoord;
 $('btnStop').onclick=()=>{if(Q&&Q.gevraagd)einde();else{Q=null;toon('setup')}};
 $('btnAgain').onclick=()=>{toon('setup');poolInfo()};

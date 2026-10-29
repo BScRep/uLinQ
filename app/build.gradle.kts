@@ -11,8 +11,8 @@ android {
         applicationId = "nl.taalinq.app"
         minSdk = 26          // Android 8 en nieuwer
         targetSdk = 35
-        versionCode = 1      // verhoog dit getal bij elke nieuwe versie die je installeert
-        versionName = "1.0"
+        versionCode = 2      // verhoog dit getal bij elke nieuwe versie die je installeert
+        versionName = "1.1"
     }
 
     // Vaste sleutel, zodat een nieuwe APK over de oude heen geïnstalleerd kan worden

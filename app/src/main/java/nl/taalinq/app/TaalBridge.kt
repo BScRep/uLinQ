@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import org.json.JSONArray
@@ -15,93 +16,213 @@ import java.util.Locale
 /**
  * De brug tussen de web-app en Android. In de pagina heet hij window.TaalApp.
  * Elke functie met @JavascriptInterface kan de pagina aanroepen.
+ *
+ * Voorlezen gaat via het spraakprogramma van de telefoon (Google of Samsung).
+ * Lukt een stem niet, dan probeert de brug zelf de volgende: eerst de gekozen stem,
+ * dan de standaardstem van de taal, dan de gedownloade stemmen van die taal.
+ * Pas als niets lukt, krijgt de pagina "fout:<code>" te horen.
  */
-class TaalBridge(private val act: Activity, private val web: WebView) : TextToSpeech.OnInitListener {
+class TaalBridge(private val act: Activity, private val web: WebView) {
 
-    private val tts = TextToSpeech(act.applicationContext, this)
+    private var tts: TextToSpeech? = null
     @Volatile private var klaar = false
+    @Volatile private var programma = ""          // pakketnaam van het spraakprogramma; leeg = standaard
+    private var generatie = 0
+    private var herstartBijTerugkeer = false
 
-    override fun onInit(status: Int) {
-        klaar = status == TextToSpeech.SUCCESS
-        if (klaar) {
-            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String?) = meld("start")
-                override fun onDone(utteranceId: String?) = meld("klaar")
-                @Deprecated("Deprecated in Java")
-                override fun onError(utteranceId: String?) = meld("fout")
-            })
-        }
-        meld(if (klaar) "gereed" else "geen")
+    // Wat er nu voorgelezen wordt, en welke stemmen we nog kunnen proberen als het misgaat.
+    private var tekst = ""
+    private var taal = "es"
+    private var tempo = 1f
+    private val nogTeProberen = ArrayDeque<Voice?>()   // null = standaardstem van de taal
+    private var huidigId = ""
+
+    init {
+        start("")
     }
 
-    /** Laat de pagina weten wat de voorleesstem doet (gereed, start, klaar, fout). */
+    /** (Her)start het spraakprogramma. Moet op de hoofd-thread. */
+    private fun start(pakket: String) {
+        klaar = false
+        try { tts?.shutdown() } catch (_: Exception) { }
+        programma = pakket
+        val mijn = ++generatie
+        val luister = TextToSpeech.OnInitListener { status -> klaarGezet(mijn, status) }
+        tts = if (pakket.isEmpty()) TextToSpeech(act.applicationContext, luister)
+              else TextToSpeech(act.applicationContext, luister, pakket)
+    }
+
+    private fun klaarGezet(mijn: Int, status: Int) {
+        if (mijn != generatie) return
+        val t = tts ?: return
+        klaar = status == TextToSpeech.SUCCESS
+        if (klaar) {
+            if (programma.isEmpty()) programma = t.defaultEngine ?: ""
+            t.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) = meld("start")
+                override fun onDone(utteranceId: String?) = meld("klaar")
+                override fun onError(utteranceId: String?, errorCode: Int) = mislukt(utteranceId, errorCode)
+                @Deprecated("Deprecated in Java")
+                override fun onError(utteranceId: String?) = mislukt(utteranceId, -1)
+            })
+        }
+        meld(if (klaar) "gereed" else "fout:init")
+    }
+
+    /** Laat de pagina weten wat de voorleesstem doet (gereed, start, klaar, fout:<code>). */
     private fun meld(wat: String) {
         act.runOnUiThread {
             web.evaluateJavascript("window.taalinqTts && window.taalinqTts('$wat')", null)
         }
     }
 
+    private fun mislukt(id: String?, code: Int) {
+        synchronized(this) {
+            if (id != huidigId) return
+            if (nogTeProberen.isNotEmpty()) {
+                volgendePoging()
+                return
+            }
+        }
+        meld("fout:$code")
+    }
+
+    private fun locale(t: String): Locale = Locale.forLanguageTag(if (t == "es") "es-ES" else "nl-NL")
+
+    private fun stemmenVan(t: String): List<Voice> {
+        val land = if (t == "es") "ES" else "NL"
+        return try {
+            tts?.voices
+                ?.filter { it.locale.language == t }
+                ?.sortedWith(compareBy(
+                    { it.locale.country != land },
+                    { !geinstalleerd(it) },
+                    { it.isNetworkConnectionRequired },
+                    { it.name }))
+                ?: emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun geinstalleerd(v: Voice): Boolean =
+        !(v.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED) ?: false)
+
     @JavascriptInterface
     fun gereed(): Boolean = klaar
 
-    /** De stemmen voor een taal ("es" of "nl"), als JSON-lijst. Stemmen uit Spanje of Nederland eerst. */
+    /** De stemmen voor een taal ("es" of "nl"), als JSON-lijst. Spanje/Nederland en gedownloade stemmen eerst. */
     @JavascriptInterface
-    fun stemmen(taal: String): String {
+    fun stemmen(t: String): String {
         val lijst = JSONArray()
         if (!klaar) return lijst.toString()
-        try {
-            val land = if (taal == "es") "ES" else "NL"
-            tts.voices
-                ?.filter { it.locale.language == taal }
-                ?.sortedWith(compareBy({ it.locale.country != land }, { it.isNetworkConnectionRequired }, { it.name }))
-                ?.forEach { v ->
-                    lijst.put(
-                        JSONObject()
-                            .put("id", v.name)
-                            .put("lang", v.locale.toLanguageTag())
-                            .put("offline", !v.isNetworkConnectionRequired)
-                    )
-                }
-        } catch (_: Exception) {
+        stemmenVan(t).forEach { v ->
+            lijst.put(
+                JSONObject()
+                    .put("id", v.name)
+                    .put("lang", v.locale.toLanguageTag())
+                    .put("offline", !v.isNetworkConnectionRequired)
+                    .put("geinstalleerd", geinstalleerd(v))
+            )
         }
         return lijst.toString()
     }
 
-    /** Leest tekst voor. Geeft "ok", "geen" (stem nog niet klaar) of "taal" (taal niet aanwezig) terug. */
+    /** De spraakprogramma's op de telefoon (bijvoorbeeld Google en Samsung), als JSON-lijst. */
+    @JavascriptInterface
+    fun programmas(): String {
+        val lijst = JSONArray()
+        val t = tts ?: return lijst.toString()
+        val standaard = try { t.defaultEngine } catch (_: Exception) { null }
+        try {
+            t.engines.forEach { e ->
+                lijst.put(JSONObject().put("id", e.name).put("naam", e.label).put("standaard", e.name == standaard))
+            }
+        } catch (_: Exception) { }
+        return lijst.toString()
+    }
+
+    @JavascriptInterface
+    fun programma(): String = programma
+
+    /** Wisselt van spraakprogramma. De pagina hoort "gereed" als het nieuwe programma klaar is. */
+    @JavascriptInterface
+    fun kiesProgramma(pakket: String) {
+        act.runOnUiThread { start(pakket) }
+    }
+
+    /** Leest tekst voor. Geeft "ok", "geen" (stem nog niet klaar) of "taal" (geen enkele stem voor deze taal) terug. */
     @JavascriptInterface
     fun spreek(tekst: String, taal: String, tempo: Float, stem: String): String {
         if (!klaar) return "geen"
-        val gekozen = if (stem.isNotEmpty()) {
-            try { tts.voices?.firstOrNull { it.name == stem } } catch (_: Exception) { null }
-        } else null
-        if (gekozen != null) {
-            tts.voice = gekozen
-        } else {
-            val uitkomst = tts.setLanguage(Locale.forLanguageTag(if (taal == "es") "es-ES" else "nl-NL"))
-            if (uitkomst == TextToSpeech.LANG_MISSING_DATA || uitkomst == TextToSpeech.LANG_NOT_SUPPORTED) return "taal"
+        val alle = stemmenVan(taal)
+        synchronized(this) {
+            this.tekst = tekst
+            this.taal = taal
+            this.tempo = tempo
+            nogTeProberen.clear()
+            alle.firstOrNull { it.name == stem }?.let { nogTeProberen.addLast(it) }
+            nogTeProberen.addLast(null)
+            alle.filter { geinstalleerd(it) && !it.isNetworkConnectionRequired && it.name != stem }
+                .take(3)
+                .forEach { nogTeProberen.addLast(it) }
         }
-        tts.setSpeechRate(tempo)
-        tts.speak(tekst, TextToSpeech.QUEUE_FLUSH, null, "taalinq-" + System.nanoTime())
+        val beschikbaar = try { tts?.isLanguageAvailable(locale(taal)) ?: TextToSpeech.LANG_NOT_SUPPORTED }
+                          catch (_: Exception) { TextToSpeech.LANG_NOT_SUPPORTED }
+        if (alle.isEmpty() && beschikbaar < TextToSpeech.LANG_AVAILABLE) return "taal"
+        synchronized(this) { volgendePoging() }
         return "ok"
+    }
+
+    /** Probeert de volgende stem uit de lijst. Aanroepen binnen synchronized(this). */
+    private fun volgendePoging() {
+        val t = tts ?: return
+        val stem = nogTeProberen.removeFirst()
+        try {
+            if (stem != null) {
+                t.setVoice(stem)
+            } else {
+                t.setLanguage(locale(taal))
+            }
+            t.setSpeechRate(tempo)
+            huidigId = "taalinq-" + System.nanoTime()
+            val r = t.speak(tekst, TextToSpeech.QUEUE_FLUSH, null, huidigId)
+            if (r == TextToSpeech.ERROR && nogTeProberen.isNotEmpty()) volgendePoging()
+            else if (r == TextToSpeech.ERROR) meld("fout:speak")
+        } catch (_: Exception) {
+            if (nogTeProberen.isNotEmpty()) volgendePoging() else meld("fout:speak")
+        }
     }
 
     @JavascriptInterface
     fun stop() {
-        if (klaar) tts.stop()
+        if (klaar) try { tts?.stop() } catch (_: Exception) { }
     }
 
-    /** Opent het scherm van Android om een stem (taal) te downloaden. */
+    /** Opent het scherm van Android om een stem (taal) te downloaden. Bij terugkomst laden we de stemmen opnieuw. */
     @JavascriptInterface
     fun installeerStem() {
         act.runOnUiThread {
+            herstartBijTerugkeer = true
+            val installeer = Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)
+            if (programma.isNotEmpty()) installeer.setPackage(programma)
             try {
-                act.startActivity(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
+                act.startActivity(installeer)
             } catch (_: Exception) {
                 try {
                     act.startActivity(Intent("com.android.settings.TTS_SETTINGS"))
                 } catch (_: Exception) {
+                    herstartBijTerugkeer = false
                 }
             }
+        }
+    }
+
+    /** Aangeroepen door MainActivity als de app weer in beeld komt. */
+    fun hervat() {
+        if (herstartBijTerugkeer) {
+            herstartBijTerugkeer = false
+            start(programma)
         }
     }
 
@@ -130,7 +251,9 @@ class TaalBridge(private val act: Activity, private val web: WebView) : TextToSp
     fun versie(): String = BuildConfig.VERSION_NAME
 
     fun sluit() {
-        tts.stop()
-        tts.shutdown()
+        try {
+            tts?.stop()
+            tts?.shutdown()
+        } catch (_: Exception) { }
     }
 }
